@@ -1,12 +1,25 @@
-from fastapi import FastAPI, Response,status, HTTPException
+from fastapi import FastAPI, Response,status, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from random import randrange
 import psycopg
 from psycopg.rows import dict_row
 import time
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, SessionLocal
+
+models.Base.metadat.create_all(bind=engine)
 
 app = FastAPI()
+
+# dependecy
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # model 정의
 class Post(BaseModel):
@@ -43,6 +56,10 @@ while True:
 @app.get("/")
 def root():
     return {"message": "Hello, World!"}
+
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    return {"status": "success"}
 
 @app.get("/posts")
 def get_posts():
